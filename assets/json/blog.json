@@ -1,0 +1,46 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "nama": "Teknologi"
+    },
+    {
+      "id": 2,
+      "nama": "Pendidikan"
+    },
+    {
+      "id": 3,
+      "nama": "Olahraga"
+    },
+    {
+      "id": 4,
+      "nama": "Lifestyle"
+    }
+  ],
+  "posts": [
+    {
+      "id": 1,
+      "category_id": 1,
+      "title": "Belajar Flutter untuk Pemula",
+      "content": "Flutter adalah framework yang digunakan untuk membuat aplikasi mobile.",
+      "author": "Admin",
+      "category": "Teknologi"
+    },
+    {
+      "id": 2,
+      "category_id": 2,
+      "title": "Pentingnya Belajar Teknologi",
+      "content": "Teknologi sangat penting untuk membantu kegiatan manusia sehari-hari.",
+      "author": "Admin",
+      "category": "Pendidikan"
+    },
+    {
+      "id": 3,
+      "category_id": 3,
+      "title": "Manfaat Berolahraga",
+      "content": "Olahraga secara teratur dapat membantu menjaga kebugaran tubuh.",
+      "author": "Admin",
+      "category": "Olahraga"
+    }
+  ]
+}
