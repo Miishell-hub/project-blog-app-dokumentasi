@@ -29,7 +29,7 @@ class DetailPage extends StatelessWidget {
               CrossAxisAlignment.start,
 
           children: [
-            // JUDUL
+
             Text(
               post['title'] ?? '',
               style: const TextStyle(
@@ -40,7 +40,6 @@ class DetailPage extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            // KATEGORI
             Text(
               'Kategori: ${post['category'] ?? ''}',
               style: const TextStyle(
@@ -50,7 +49,6 @@ class DetailPage extends StatelessWidget {
 
             const SizedBox(height: 5),
 
-            // PENULIS
             Text(
               'Penulis: ${post['author'] ?? ''}',
               style: const TextStyle(
@@ -62,7 +60,6 @@ class DetailPage extends StatelessWidget {
               height: 30,
             ),
 
-            // ISI ARTIKEL
             Text(
               post['content'] ?? '',
               style: const TextStyle(
@@ -73,7 +70,6 @@ class DetailPage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // TOMBOL EDIT
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -89,7 +85,6 @@ class DetailPage extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // TOMBOL HAPUS
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
