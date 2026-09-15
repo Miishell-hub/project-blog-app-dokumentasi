@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const BlogApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BlogApp extends StatelessWidget {
+  const BlogApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Blog App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+        ),
+        useMaterial3: true,
       ),
       home: const HomePage(),
     );
