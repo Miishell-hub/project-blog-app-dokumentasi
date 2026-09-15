@@ -37,10 +37,6 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // =========================
-  // LOAD DATA
-  // =========================
-
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -109,10 +105,6 @@ class _HomePageState extends State<HomePage> {
     await saveData();
   }
 
-  // =========================
-  // SAVE DATA
-  // =========================
-
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -126,10 +118,6 @@ class _HomePageState extends State<HomePage> {
       jsonEncode(posts),
     );
   }
-
-  // =========================
-  // TAMBAH KATEGORI
-  // =========================
 
   void showAddCategory(
     StateSetter setDialogState,
@@ -236,10 +224,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // =========================
-  // FORM TAMBAH / EDIT
-  // =========================
-
   void showFormArtikel({
     Map? post,
   }) {
@@ -293,7 +277,6 @@ class _HomePageState extends State<HomePage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // JUDUL
                       TextField(
                         controller: titleController,
                         decoration:
@@ -306,7 +289,6 @@ class _HomePageState extends State<HomePage> {
 
                       const SizedBox(height: 12),
 
-                      // PENULIS
                       TextField(
                         controller: authorController,
                         decoration:
@@ -319,7 +301,6 @@ class _HomePageState extends State<HomePage> {
 
                       const SizedBox(height: 12),
 
-                      // KATEGORI
                       Row(
                         children: [
                           Expanded(
@@ -427,10 +408,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // =========================
-  // SIMPAN ARTIKEL
-  // =========================
-
   Future<void> saveArtikel(
     BuildContext dialogContext,
   ) async {
@@ -466,7 +443,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (editingId == null) {
-      // TAMBAH
+
       int newId = 1;
 
       if (posts.isNotEmpty) {
@@ -492,7 +469,7 @@ class _HomePageState extends State<HomePage> {
             category['nama'],
       });
     } else {
-      // EDIT
+
       final index =
           posts.indexWhere(
         (post) =>
@@ -530,10 +507,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // =========================
-  // HAPUS ARTIKEL
-  // =========================
 
   void deleteArtikel(int id) {
     showDialog(
@@ -589,10 +562,6 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
-
-  // =========================
-  // TAMPILAN
-  // =========================
 
   @override
   Widget build(BuildContext context) {
@@ -684,10 +653,6 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    // =====================
-                    // BUKA DETAIL
-                    // =====================
-
                     onTap: () {
                       Navigator.push(
                         context,
@@ -720,10 +685,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     },
-
-                    // =====================
-                    // MENU EDIT / HAPUS
-                    // =====================
 
                     trailing:
                         PopupMenuButton<
