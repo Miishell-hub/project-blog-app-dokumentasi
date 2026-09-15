@@ -42,10 +42,6 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // =========================
-  // LOAD DATA JSON
-  // =========================
-
   Future<void> loadData() async {
     try {
       final jsonString = await rootBundle.loadString('assets/json/blog.json');
@@ -64,10 +60,6 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-
-  // =========================
-  // TAMBAH KATEGORI
-  // =========================
 
   void showAddCategory() {
     categoryController.clear();
@@ -117,7 +109,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Cek kategori yang sama
     final sudahAda = categories.any(
       (category) =>
           category['nama'].toString().toLowerCase() == nama.toLowerCase(),
@@ -155,10 +146,6 @@ class _HomePageState extends State<HomePage> {
       SnackBar(content: Text('Kategori "$nama" berhasil ditambahkan')),
     );
   }
-
-  // =========================
-  // TAMBAH / EDIT ARTIKEL
-  // =========================
 
   void showFormArtikel({Map? post}) {
     if (post != null) {
@@ -395,10 +382,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // =========================
-  // SIMPAN ARTIKEL
-  // =========================
-
   void saveArtikel(BuildContext dialogContext) {
     final title = titleController.text.trim();
     final author = authorController.text.trim();
@@ -417,10 +400,6 @@ class _HomePageState extends State<HomePage> {
     final category = categories.firstWhere(
       (item) => item['id'] == selectedCategory,
     );
-
-    // =========================
-    // TAMBAH
-    // =========================
 
     if (editingId == null) {
       int newId = 1;
@@ -452,9 +431,7 @@ class _HomePageState extends State<HomePage> {
         const SnackBar(content: Text('Artikel berhasil ditambahkan')),
       );
     }
-    // =========================
-    // EDIT
-    // =========================
+
     else {
       final index = posts.indexWhere((post) => post['id'] == editingId);
 
@@ -478,10 +455,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
-  // =========================
-  // HAPUS ARTIKEL
-  // =========================
 
   void deleteArtikel(int id) {
     showDialog(
@@ -519,10 +492,6 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
-
-  // =========================
-  // BUILD
-  // =========================
 
   @override
   Widget build(BuildContext context) {
