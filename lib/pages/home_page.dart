@@ -1,8 +1,6 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'detail_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,9 +13,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List categories = [];
   List posts = [];
-
-  bool isLoading = true;
-  String errorMessage = '';
 
   final titleController = TextEditingController();
   final authorController = TextEditingController();
@@ -42,31 +37,108 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  // =========================
+  // LOAD DATA
+  // =========================
+
   Future<void> loadData() async {
-    try {
-      final jsonString = await rootBundle.loadString('assets/json/blog.json');
+    final prefs = await SharedPreferences.getInstance();
 
-      final jsonData = jsonDecode(jsonString);
+    final savedCategories = prefs.getString('categories');
+    final savedPosts = prefs.getString('posts');
 
-      setState(() {
-        categories = jsonData['categories'] ?? [];
-        posts = jsonData['posts'] ?? [];
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-        errorMessage = e.toString();
-      });
-    }
+    setState(() {
+      if (savedCategories != null) {
+        categories = jsonDecode(savedCategories);
+      } else {
+        categories = [
+          {
+            'id': 1,
+            'nama': 'Teknologi',
+          },
+          {
+            'id': 2,
+            'nama': 'Pendidikan',
+          },
+          {
+            'id': 3,
+            'nama': 'Olahraga',
+          },
+          {
+            'id': 4,
+            'nama': 'Lifestyle',
+          },
+        ];
+      }
+
+      if (savedPosts != null) {
+        posts = jsonDecode(savedPosts);
+      } else {
+        posts = [
+          {
+            'id': 1,
+            'category_id': 1,
+            'title': 'Belajar Flutter untuk Pemula',
+            'content':
+                'Flutter adalah framework yang digunakan untuk membuat aplikasi mobile.',
+            'author': 'Admin',
+            'category': 'Teknologi',
+          },
+          {
+            'id': 2,
+            'category_id': 2,
+            'title': 'Pentingnya Belajar Teknologi',
+            'content':
+                'Teknologi sangat penting untuk membantu kegiatan manusia sehari-hari.',
+            'author': 'Admin',
+            'category': 'Pendidikan',
+          },
+          {
+            'id': 3,
+            'category_id': 3,
+            'title': 'Manfaat Berolahraga',
+            'content':
+                'Olahraga secara teratur dapat membantu menjaga kebugaran tubuh.',
+            'author': 'Admin',
+            'category': 'Olahraga',
+          },
+        ];
+      }
+    });
+
+    await saveData();
   }
 
-  void showAddCategory() {
+  // =========================
+  // SAVE DATA
+  // =========================
+
+  Future<void> saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString(
+      'categories',
+      jsonEncode(categories),
+    );
+
+    await prefs.setString(
+      'posts',
+      jsonEncode(posts),
+    );
+  }
+
+  // =========================
+  // TAMBAH KATEGORI
+  // =========================
+
+  void showAddCategory(
+    StateSetter setDialogState,
+  ) {
     categoryController.clear();
 
     showDialog(
       context: context,
-      builder: (dialogContext) {
+      builder: (categoryContext) {
         return AlertDialog(
           title: const Text('Tambah Kategori'),
 
@@ -74,7 +146,6 @@ class _HomePageState extends State<HomePage> {
             controller: categoryController,
             decoration: const InputDecoration(
               labelText: 'Nama Kategori',
-              hintText: 'Contoh: Berita',
               border: OutlineInputBorder(),
             ),
           ),
@@ -82,14 +153,80 @@ class _HomePageState extends State<HomePage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext);
+                Navigator.pop(categoryContext);
               },
               child: const Text('Batal'),
             ),
 
             ElevatedButton(
-              onPressed: () {
-                addCategory(dialogContext);
+              onPressed: () async {
+                final nama =
+                    categoryController.text.trim();
+
+                if (nama.isEmpty) {
+                  return;
+                }
+
+                final sudahAda = categories.any(
+                  (category) =>
+                      category['nama']
+                          .toString()
+                          .toLowerCase() ==
+                      nama.toLowerCase(),
+                );
+
+                if (sudahAda) {
+                  Navigator.pop(categoryContext);
+
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Kategori sudah ada',
+                      ),
+                    ),
+                  );
+
+                  return;
+                }
+
+                int newId = 1;
+
+                if (categories.isNotEmpty) {
+                  newId = categories
+                          .map(
+                            (category) =>
+                                category['id'] as int,
+                          )
+                          .reduce(
+                            (a, b) => a > b ? a : b,
+                          ) +
+                      1;
+                }
+
+                setState(() {
+                  categories.add({
+                    'id': newId,
+                    'nama': nama,
+                  });
+
+                  selectedCategory = newId;
+                });
+
+                await saveData();
+
+                setDialogState(() {});
+
+                Navigator.pop(categoryContext);
+
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Kategori "$nama" berhasil ditambahkan',
+                    ),
+                  ),
+                );
               },
               child: const Text('Tambah'),
             ),
@@ -99,66 +236,28 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void addCategory(BuildContext dialogContext) {
-    final nama = categoryController.text.trim();
+  // =========================
+  // FORM TAMBAH / EDIT
+  // =========================
 
-    if (nama.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama kategori harus diisi')),
-      );
-      return;
-    }
-
-    final sudahAda = categories.any(
-      (category) =>
-          category['nama'].toString().toLowerCase() == nama.toLowerCase(),
-    );
-
-    if (sudahAda) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Kategori sudah ada')));
-      return;
-    }
-
-    // Membuat ID baru
-    int newId = 1;
-
-    if (categories.isNotEmpty) {
-      newId =
-          categories
-              .map((category) => category['id'] as int)
-              .reduce((a, b) => a > b ? a : b) +
-          1;
-    }
-
-    final newCategory = {'id': newId, 'nama': nama};
-
-    // Tambahkan kategori
-    setState(() {
-      categories.add(newCategory);
-      selectedCategory = newId;
-    });
-
-    // Tutup dialog kategori
-    Navigator.pop(dialogContext);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Kategori "$nama" berhasil ditambahkan')),
-    );
-  }
-
-  void showFormArtikel({Map? post}) {
+  void showFormArtikel({
+    Map? post,
+  }) {
     if (post != null) {
-      // MODE EDIT
       editingId = post['id'];
 
-      titleController.text = post['title'] ?? '';
-      authorController.text = post['author'] ?? '';
-      contentController.text = post['content'] ?? '';
+      titleController.text =
+          post['title'] ?? '';
 
-      selectedCategory = post['category_id'];
+      authorController.text =
+          post['author'] ?? '';
+
+      contentController.text =
+          post['content'] ?? '';
+
+      selectedCategory =
+          post['category_id'];
     } else {
-      // MODE TAMBAH
       editingId = null;
 
       titleController.clear();
@@ -166,7 +265,8 @@ class _HomePageState extends State<HomePage> {
       contentController.clear();
 
       if (categories.isNotEmpty) {
-        selectedCategory = categories[0]['id'];
+        selectedCategory =
+            categories[0]['id'];
       } else {
         selectedCategory = null;
       }
@@ -175,23 +275,32 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(post == null ? 'Tambah Artikel' : 'Edit Artikel'),
+        return StatefulBuilder(
+          builder: (
+            context,
+            setDialogState,
+          ) {
+            return AlertDialog(
+              title: Text(
+                post == null
+                    ? 'Tambah Artikel'
+                    : 'Edit Artikel',
+              ),
 
-          content: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: StatefulBuilder(
-                builder: (context, setDialogState) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
+              content: SizedBox(
+                width: 500,
+
+                child: SingleChildScrollView(
+                  child: Column(
                     children: [
                       // JUDUL
                       TextField(
                         controller: titleController,
-                        decoration: const InputDecoration(
+                        decoration:
+                            const InputDecoration(
                           labelText: 'Judul Artikel',
-                          border: OutlineInputBorder(),
+                          border:
+                              OutlineInputBorder(),
                         ),
                       ),
 
@@ -200,9 +309,11 @@ class _HomePageState extends State<HomePage> {
                       // PENULIS
                       TextField(
                         controller: authorController,
-                        decoration: const InputDecoration(
+                        decoration:
+                            const InputDecoration(
                           labelText: 'Nama Penulis',
-                          border: OutlineInputBorder(),
+                          border:
+                              OutlineInputBorder(),
                         ),
                       ),
 
@@ -212,25 +323,38 @@ class _HomePageState extends State<HomePage> {
                       Row(
                         children: [
                           Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: selectedCategory,
-                              decoration: const InputDecoration(
+                            child:
+                                DropdownButtonFormField<
+                                    int>(
+                              value:
+                                  selectedCategory,
+
+                              decoration:
+                                  const InputDecoration(
                                 labelText: 'Kategori',
-                                border: OutlineInputBorder(),
+                                border:
+                                    OutlineInputBorder(),
                               ),
 
-                              items: categories.map<DropdownMenuItem<int>>((
-                                category,
-                              ) {
-                                return DropdownMenuItem<int>(
-                                  value: category['id'],
-                                  child: Text(category['nama']),
-                                );
-                              }).toList(),
+                              items: categories.map<
+                                  DropdownMenuItem<int>>(
+                                (category) {
+                                  return DropdownMenuItem<
+                                      int>(
+                                    value:
+                                        category['id'],
+                                    child: Text(
+                                      category['nama'],
+                                    ),
+                                  );
+                                },
+                              ).toList(),
 
-                              onChanged: (value) {
+                              onChanged:
+                                  (value) {
                                 setDialogState(() {
-                                  selectedCategory = value;
+                                  selectedCategory =
+                                      value;
                                 });
                               },
                             ),
@@ -238,251 +362,224 @@ class _HomePageState extends State<HomePage> {
 
                           const SizedBox(width: 8),
 
-                          // TOMBOL TAMBAH KATEGORI
                           IconButton(
-                            onPressed: () async {
-                              categoryController.clear();
-
-                              final nama = await showDialog<String>(
-                                context: context,
-                                builder: (categoryDialogContext) {
-                                  return AlertDialog(
-                                    title: const Text('Tambah Kategori'),
-
-                                    content: TextField(
-                                      controller: categoryController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Nama Kategori',
-                                        hintText: 'Contoh: Berita',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                    ),
-
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(categoryDialogContext);
-                                        },
-                                        child: const Text('Batal'),
-                                      ),
-
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          final nama = categoryController.text
-                                              .trim();
-
-                                          Navigator.pop(
-                                            categoryDialogContext,
-                                            nama,
-                                          );
-                                        },
-                                        child: const Text('Tambah'),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-
-                              if (nama == null || nama.isEmpty) {
-                                return;
-                              }
-
-                              // Cek kategori
-                              final sudahAda = categories.any(
-                                (category) =>
-                                    category['nama'].toString().toLowerCase() ==
-                                    nama.toLowerCase(),
-                              );
-
-                              if (sudahAda) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Kategori sudah ada'),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              // ID baru
-                              int newId = 1;
-
-                              if (categories.isNotEmpty) {
-                                newId =
-                                    categories
-                                        .map(
-                                          (category) => category['id'] as int,
-                                        )
-                                        .reduce((a, b) => a > b ? a : b) +
-                                    1;
-                              }
-
-                              final newCategory = {'id': newId, 'nama': nama};
-
-                              // Tambahkan kategori
-                              setState(() {
-                                categories.add(newCategory);
-                                selectedCategory = newId;
-                              });
-
-                              // Refresh dialog artikel
-                              setDialogState(() {});
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Kategori "$nama" berhasil ditambahkan',
-                                  ),
-                                ),
+                            onPressed: () {
+                              showAddCategory(
+                                setDialogState,
                               );
                             },
-
-                            icon: const Icon(Icons.add),
-
-                            tooltip: 'Tambah Kategori',
+                            icon: const Icon(
+                              Icons.add,
+                            ),
+                            tooltip:
+                                'Tambah Kategori',
                           ),
                         ],
                       ),
 
                       const SizedBox(height: 12),
 
-                      // ISI ARTIKEL
+                      // ISI
                       TextField(
-                        controller: contentController,
+                        controller:
+                            contentController,
                         maxLines: 5,
-                        decoration: const InputDecoration(
+                        decoration:
+                            const InputDecoration(
                           labelText: 'Isi Artikel',
-                          border: OutlineInputBorder(),
+                          border:
+                              OutlineInputBorder(),
                           alignLabelWithHint: true,
                         ),
                       ),
                     ],
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-          ),
 
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Batal'),
-            ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(
+                      dialogContext,
+                    );
+                  },
+                  child: const Text('Batal'),
+                ),
 
-            ElevatedButton(
-              onPressed: () {
-                saveArtikel(dialogContext);
-              },
-              child: Text(post == null ? 'Tambah' : 'Simpan'),
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: () {
+                    saveArtikel(
+                      dialogContext,
+                    );
+                  },
+                  child: Text(
+                    post == null
+                        ? 'Tambah'
+                        : 'Simpan',
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  void saveArtikel(BuildContext dialogContext) {
-    final title = titleController.text.trim();
-    final author = authorController.text.trim();
-    final content = contentController.text.trim();
+  // =========================
+  // SIMPAN ARTIKEL
+  // =========================
+
+  Future<void> saveArtikel(
+    BuildContext dialogContext,
+  ) async {
+    final title =
+        titleController.text.trim();
+
+    final author =
+        authorController.text.trim();
+
+    final content =
+        contentController.text.trim();
 
     if (title.isEmpty ||
         author.isEmpty ||
         content.isEmpty ||
         selectedCategory == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Semua data harus diisi')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Semua data harus diisi',
+          ),
+        ),
+      );
+
       return;
     }
 
-    final category = categories.firstWhere(
-      (item) => item['id'] == selectedCategory,
+    final category =
+        categories.firstWhere(
+      (item) =>
+          item['id'] == selectedCategory,
     );
 
     if (editingId == null) {
+      // TAMBAH
       int newId = 1;
 
       if (posts.isNotEmpty) {
-        newId =
-            posts
-                .map((post) => post['id'] as int)
-                .reduce((a, b) => a > b ? a : b) +
+        newId = posts
+                .map(
+                  (post) =>
+                      post['id'] as int,
+                )
+                .reduce(
+                  (a, b) => a > b ? a : b,
+                ) +
             1;
       }
 
-      final newPost = {
+      posts.add({
         'id': newId,
-        'category_id': selectedCategory,
+        'category_id':
+            selectedCategory,
         'title': title,
         'content': content,
         'author': author,
-        'category': category['nama'],
-      };
-
-      setState(() {
-        posts.add(newPost);
+        'category':
+            category['nama'],
       });
-
-      Navigator.pop(dialogContext);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Artikel berhasil ditambahkan')),
+    } else {
+      // EDIT
+      final index =
+          posts.indexWhere(
+        (post) =>
+            post['id'] == editingId,
       );
-    }
-
-    else {
-      final index = posts.indexWhere((post) => post['id'] == editingId);
 
       if (index != -1) {
-        setState(() {
-          posts[index] = {
-            'id': editingId,
-            'category_id': selectedCategory,
-            'title': title,
-            'content': content,
-            'author': author,
-            'category': category['nama'],
-          };
-        });
+        posts[index] = {
+          'id': editingId,
+          'category_id':
+              selectedCategory,
+          'title': title,
+          'content': content,
+          'author': author,
+          'category':
+              category['nama'],
+        };
       }
-
-      Navigator.pop(dialogContext);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Artikel berhasil diperbarui')),
-      );
     }
+
+    setState(() {});
+
+    await saveData();
+
+    Navigator.pop(dialogContext);
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(
+          editingId == null
+              ? 'Artikel berhasil ditambahkan'
+              : 'Artikel berhasil diperbarui',
+        ),
+      ),
+    );
   }
+
+  // =========================
+  // HAPUS ARTIKEL
+  // =========================
 
   void deleteArtikel(int id) {
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Hapus Artikel'),
+          title: const Text(
+            'Hapus Artikel',
+          ),
 
-          content: const Text('Apakah kamu yakin ingin menghapus artikel ini?'),
+          content: const Text(
+            'Apakah kamu yakin ingin menghapus artikel ini?',
+          ),
 
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext);
+                Navigator.pop(
+                  dialogContext,
+                );
               },
               child: const Text('Batal'),
             ),
 
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 setState(() {
-                  posts.removeWhere((post) => post['id'] == id);
+                  posts.removeWhere(
+                    (post) =>
+                        post['id'] == id,
+                  );
                 });
 
-                Navigator.pop(dialogContext);
+                await saveData();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Artikel berhasil dihapus')),
+                Navigator.pop(
+                  dialogContext,
+                );
+
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Artikel berhasil dihapus',
+                    ),
+                  ),
                 );
               },
               child: const Text('Hapus'),
@@ -493,107 +590,173 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // =========================
+  // TAMPILAN
+  // =========================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Blog App'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Blog App'),
+        centerTitle: true,
+      ),
 
-      // Tombol tambah artikel
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton:
+          FloatingActionButton(
         onPressed: () {
           showFormArtikel();
         },
         child: const Icon(Icons.add),
       ),
 
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  'Error:\n$errorMessage',
-                  textAlign: TextAlign.center,
-                ),
+      body: posts.isEmpty
+          ? const Center(
+              child: Text(
+                'Belum ada artikel',
               ),
             )
-          : posts.isEmpty
-          ? const Center(child: Text('Belum ada artikel'))
           : ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding:
+                  const EdgeInsets.all(16),
+
               itemCount: posts.length,
-              itemBuilder: (context, index) {
-                final post = posts[index];
+
+              itemBuilder:
+                  (context, index) {
+                final post =
+                    posts[index];
 
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin:
+                      const EdgeInsets.only(
+                    bottom: 12,
+                  ),
 
                   child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
+                    contentPadding:
+                        const EdgeInsets.all(
+                      16,
+                    ),
 
-                    // JUDUL
                     title: Text(
                       post['title'] ?? '',
-                      style: const TextStyle(
+                      style:
+                          const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight:
+                            FontWeight.bold,
                       ),
                     ),
 
-                    // DATA ARTIKEL
                     subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding:
+                          const EdgeInsets.only(
+                        top: 8,
+                      ),
 
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
                         children: [
-                          Text('Kategori: ${post['category']}'),
-
-                          Text('Penulis: ${post['author']}'),
-
-                          const SizedBox(height: 8),
+                          Text(
+                            'Kategori: ${post['category']}',
+                          ),
 
                           Text(
-                            post['content'] ?? '',
+                            'Penulis: ${post['author']}',
+                          ),
+
+                          const SizedBox(
+                            height: 8,
+                          ),
+
+                          Text(
+                            post['content'] ??
+                                '',
                             maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            overflow:
+                                TextOverflow
+                                    .ellipsis,
                           ),
                         ],
                       ),
                     ),
 
-                    // DETAIL
+                    // =====================
+                    // BUKA DETAIL
+                    // =====================
+
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => DetailPage(post: post),
+                          builder:
+                              (context) =>
+                                  DetailPage(
+                            post: post,
+
+                            edit: () {
+                              Navigator.pop(
+                                context,
+                              );
+
+                              showFormArtikel(
+                                post: post,
+                              );
+                            },
+
+                            hapus: () {
+                              Navigator.pop(
+                                context,
+                              );
+
+                              deleteArtikel(
+                                post['id'],
+                              );
+                            },
+                          ),
                         ),
                       );
                     },
 
-                    // EDIT / HAPUS
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          showFormArtikel(post: post);
+                    // =====================
+                    // MENU EDIT / HAPUS
+                    // =====================
+
+                    trailing:
+                        PopupMenuButton<
+                            String>(
+                      onSelected:
+                          (value) {
+                        if (value ==
+                            'edit') {
+                          showFormArtikel(
+                            post: post,
+                          );
                         }
 
-                        if (value == 'delete') {
-                          deleteArtikel(post['id']);
+                        if (value ==
+                            'delete') {
+                          deleteArtikel(
+                            post['id'],
+                          );
                         }
                       },
 
-                      itemBuilder: (context) => [
+                      itemBuilder:
+                          (context) => [
                         const PopupMenuItem(
                           value: 'edit',
-
                           child: Row(
                             children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
+                              Icon(
+                                Icons.edit,
+                              ),
+                              SizedBox(
+                                width: 8,
+                              ),
                               Text('Edit'),
                             ],
                           ),
@@ -601,11 +764,14 @@ class _HomePageState extends State<HomePage> {
 
                         const PopupMenuItem(
                           value: 'delete',
-
                           child: Row(
                             children: [
-                              Icon(Icons.delete),
-                              SizedBox(width: 8),
+                              Icon(
+                                Icons.delete,
+                              ),
+                              SizedBox(
+                                width: 8,
+                              ),
                               Text('Hapus'),
                             ],
                           ),
