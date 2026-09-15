@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'detail_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,22 +13,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List posts = [];
   List categories = [];
+  List posts = [];
 
   bool isLoading = true;
   String errorMessage = "";
 
-  final TextEditingController titleController =
-      TextEditingController();
-
-  final TextEditingController authorController =
-      TextEditingController();
-
-  final TextEditingController contentController =
-      TextEditingController();
+  final titleController = TextEditingController();
+  final authorController = TextEditingController();
+  final contentController = TextEditingController();
+  final categoryController = TextEditingController();
 
   int? selectedCategory;
+  int? editingId;
 
   @override
   void initState() {
@@ -34,11 +33,22 @@ class _HomePageState extends State<HomePage> {
     loadData();
   }
 
+  @override
+  void dispose() {
+    titleController.dispose();
+    authorController.dispose();
+    contentController.dispose();
+    categoryController.dispose();
+    super.dispose();
+  }
+
+  // =========================
+  // LOAD JSON
+  // =========================
+
   Future<void> loadData() async {
     try {
-      final jsonString = await rootBundle.loadString(
-        'assets/json/blog.json',
-      );
+      final jsonString = await rootBundle.loadString('assets/json/blog.json');
 
       final jsonData = jsonDecode(jsonString);
 
@@ -52,29 +62,29 @@ class _HomePageState extends State<HomePage> {
         isLoading = false;
         errorMessage = e.toString();
       });
-
-      print("Error membaca JSON: $e");
     }
   }
 
-  void clearForm() {
-    titleController.clear();
-    authorController.clear();
-    contentController.clear();
-    selectedCategory = null;
-  }
+  // =========================
+  // TAMBAH KATEGORI
+  // =========================
 
-  void showAddForm() {
-    clearForm();
+  void showAddCategory() {
+    categoryController.clear();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Tambah Artikel"),
-
-          content: formArtikel(),
-
+          title: const Text("Tambah Kategori"),
+          content: TextField(
+            controller: categoryController,
+            decoration: const InputDecoration(
+              labelText: "Nama Kategori",
+              hintText: "Contoh: Berita",
+              border: OutlineInputBorder(),
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -82,82 +92,89 @@ class _HomePageState extends State<HomePage> {
               },
               child: const Text("Batal"),
             ),
-
-            ElevatedButton(
-              onPressed: () {
-                addPost();
-              },
-              child: const Text("Tambah"),
-            ),
+            ElevatedButton(onPressed: addCategory, child: const Text("Tambah")),
           ],
         );
       },
     );
   }
 
-  void addPost() {
-    if (titleController.text.trim().isEmpty ||
-        authorController.text.trim().isEmpty ||
-        contentController.text.trim().isEmpty ||
-        selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Semua data harus diisi"),
-        ),
-      );
+  void addCategory() {
+    final nama = categoryController.text.trim();
 
+    if (nama.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Nama kategori harus diisi")),
+      );
       return;
     }
 
-    final category = categories.firstWhere(
-      (item) => item["id"] == selectedCategory,
+    final sudahAda = categories.any(
+      (category) =>
+          category["nama"].toString().toLowerCase() == nama.toLowerCase(),
     );
 
-    final newId = posts.isEmpty
+    if (sudahAda) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Kategori sudah ada")));
+      return;
+    }
+
+    final newId = categories.isEmpty
         ? 1
-        : posts
-                .map((post) => post["id"] as int)
-                .reduce((a, b) => a > b ? a : b) +
-            1;
+        : categories
+                  .map((category) => category["id"] as int)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
 
-    final newPost = {
-      "id": newId,
-      "category_id": selectedCategory,
-      "title": titleController.text.trim(),
-      "content": contentController.text.trim(),
-      "author": authorController.text.trim(),
-      "category": category["nama"],
-    };
+    final newCategory = {"id": newId, "nama": nama};
 
     setState(() {
-      posts.add(newPost);
+      categories.add(newCategory);
+      selectedCategory = newId;
     });
 
-    clearForm();
+    categoryController.clear();
 
     Navigator.pop(context);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Artikel berhasil ditambahkan"),
-      ),
+    ScaffoldMessenger.of(this.context).showSnackBar(
+      SnackBar(content: Text('Kategori "$nama" berhasil ditambahkan')),
     );
   }
 
-  void showEditForm(Map post) {
-    titleController.text = post["title"] ?? "";
-    authorController.text = post["author"] ?? "";
-    contentController.text = post["content"] ?? "";
-    selectedCategory = post["category_id"];
+  // =========================
+  // FORM TAMBAH / EDIT
+  // =========================
+
+  void showFormArtikel({Map? post}) {
+    if (post != null) {
+      editingId = post["id"];
+
+      titleController.text = post["title"] ?? "";
+      authorController.text = post["author"] ?? "";
+      contentController.text = post["content"] ?? "";
+
+      selectedCategory = post["category_id"];
+    } else {
+      editingId = null;
+
+      titleController.clear();
+      authorController.clear();
+      contentController.clear();
+
+      selectedCategory = categories.isNotEmpty ? categories[0]["id"] : null;
+    }
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Edit Artikel"),
-
-          content: formArtikel(),
-
+          title: Text(post == null ? "Tambah Artikel" : "Edit Artikel"),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(child: formArtikel()),
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -165,12 +182,9 @@ class _HomePageState extends State<HomePage> {
               },
               child: const Text("Batal"),
             ),
-
             ElevatedButton(
-              onPressed: () {
-                updatePost(post);
-              },
-              child: const Text("Update"),
+              onPressed: saveArtikel,
+              child: Text(post == null ? "Tambah" : "Simpan"),
             ),
           ],
         );
@@ -178,54 +192,167 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void updatePost(Map post) {
-    if (titleController.text.trim().isEmpty ||
-        authorController.text.trim().isEmpty ||
-        contentController.text.trim().isEmpty ||
-        selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Semua data harus diisi"),
+  Widget formArtikel() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: "Judul Artikel",
+            border: OutlineInputBorder(),
+          ),
         ),
-      );
 
-      return;
-    }
+        const SizedBox(height: 12),
 
-    final category = categories.firstWhere(
-      (item) => item["id"] == selectedCategory,
-    );
+        TextField(
+          controller: authorController,
+          decoration: const InputDecoration(
+            labelText: "Nama Penulis",
+            border: OutlineInputBorder(),
+          ),
+        ),
 
-    setState(() {
-      post["category_id"] = selectedCategory;
-      post["title"] = titleController.text.trim();
-      post["content"] = contentController.text.trim();
-      post["author"] = authorController.text.trim();
-      post["category"] = category["nama"];
-    });
+        const SizedBox(height: 12),
 
-    clearForm();
+        // KATEGORI + TOMBOL TAMBAH
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<int>(
+                value: selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: "Kategori",
+                  border: OutlineInputBorder(),
+                ),
+                items: categories.map<DropdownMenuItem<int>>((category) {
+                  return DropdownMenuItem<int>(
+                    value: category["id"],
+                    child: Text(category["nama"]),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value;
+                  });
+                },
+              ),
+            ),
 
-    Navigator.pop(context);
+            const SizedBox(width: 8),
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Artikel berhasil diupdate"),
-      ),
+            IconButton(
+              onPressed: showAddCategory,
+              icon: const Icon(Icons.add),
+              tooltip: "Tambah Kategori",
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        TextField(
+          controller: contentController,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            labelText: "Isi Artikel",
+            border: OutlineInputBorder(),
+            alignLabelWithHint: true,
+          ),
+        ),
+      ],
     );
   }
 
-  void confirmDelete(Map post) {
+  // =========================
+  // SIMPAN ARTIKEL
+  // =========================
+
+  void saveArtikel() {
+    final title = titleController.text.trim();
+    final author = authorController.text.trim();
+    final content = contentController.text.trim();
+
+    if (title.isEmpty ||
+        author.isEmpty ||
+        content.isEmpty ||
+        selectedCategory == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Semua data harus diisi")));
+      return;
+    }
+
+    final selectedCategoryData = categories.firstWhere(
+      (category) => category["id"] == selectedCategory,
+    );
+
+    if (editingId == null) {
+      // TAMBAH ARTIKEL
+
+      final newId = posts.isEmpty
+          ? 1
+          : posts
+                    .map((post) => post["id"] as int)
+                    .reduce((a, b) => a > b ? a : b) +
+                1;
+
+      final newPost = {
+        "id": newId,
+        "category_id": selectedCategory,
+        "title": title,
+        "content": content,
+        "author": author,
+        "category": selectedCategoryData["nama"],
+      };
+
+      setState(() {
+        posts.add(newPost);
+      });
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        const SnackBar(content: Text("Artikel berhasil ditambahkan")),
+      );
+    } else {
+      // EDIT ARTIKEL
+
+      final index = posts.indexWhere((post) => post["id"] == editingId);
+
+      if (index != -1) {
+        setState(() {
+          posts[index] = {
+            "id": editingId,
+            "category_id": selectedCategory,
+            "title": title,
+            "content": content,
+            "author": author,
+            "category": selectedCategoryData["nama"],
+          };
+        });
+      }
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        const SnackBar(content: Text("Artikel berhasil diperbarui")),
+      );
+    }
+  }
+
+  // =========================
+  // HAPUS ARTIKEL
+  // =========================
+
+  void deleteArtikel(int id) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Hapus Artikel"),
-
-          content: Text(
-            'Apakah kamu yakin ingin menghapus "${post["title"]}"?',
-          ),
-
+          content: const Text("Apakah kamu yakin ingin menghapus artikel ini?"),
           actions: [
             TextButton(
               onPressed: () {
@@ -233,19 +360,16 @@ class _HomePageState extends State<HomePage> {
               },
               child: const Text("Batal"),
             ),
-
             ElevatedButton(
               onPressed: () {
                 setState(() {
-                  posts.remove(post);
+                  posts.removeWhere((post) => post["id"] == id);
                 });
 
                 Navigator.pop(context);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Artikel berhasil dihapus"),
-                  ),
+                ScaffoldMessenger.of(this.context).showSnackBar(
+                  const SnackBar(content: Text("Artikel berhasil dihapus")),
                 );
               },
               child: const Text("Hapus"),
@@ -256,267 +380,112 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget formArtikel() {
-    return SizedBox(
-      width: 400,
-
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // JUDUL
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: "Nama Artikel",
-                hintText: "Masukkan nama artikel",
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // KATEGORI
-            DropdownButtonFormField<int>(
-              value: selectedCategory,
-
-              decoration: const InputDecoration(
-                labelText: "Kategori",
-                border: OutlineInputBorder(),
-              ),
-
-              items: categories.map<DropdownMenuItem<int>>(
-                (category) {
-                  return DropdownMenuItem<int>(
-                    value: category["id"],
-                    child: Text(category["nama"]),
-                  );
-                },
-              ).toList(),
-
-              onChanged: (value) {
-                setState(() {
-                  selectedCategory = value;
-                });
-              },
-            ),
-
-            const SizedBox(height: 15),
-
-            // PENULIS
-            TextField(
-              controller: authorController,
-              decoration: const InputDecoration(
-                labelText: "Nama Penulis",
-                hintText: "Masukkan nama penulis",
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ISI
-            TextField(
-              controller: contentController,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: "Isi Artikel",
-                hintText: "Masukkan isi artikel",
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==========================================
-  // BUILD
-  // ==========================================
+  // =========================
+  // TAMPILAN
+  // =========================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Koleksi Artikel"),
-        centerTitle: true,
+      appBar: AppBar(title: const Text("Blog App"), centerTitle: true),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showFormArtikel();
+        },
+        child: const Icon(Icons.add),
       ),
 
       body: isLoading
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : errorMessage.isNotEmpty
-              ? Center(
-                  child: Text(
-                    "Gagal membaca JSON:\n$errorMessage",
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : posts.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "Belum ada artikel",
-                        style: TextStyle(fontSize: 18),
+          ? Center(
+              child: Text("Error: $errorMessage", textAlign: TextAlign.center),
+            )
+          : posts.isEmpty
+          ? const Center(child: Text("Belum ada artikel"))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+
+                    title: Text(
+                      post["title"] ?? "",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: posts.length,
-
-                      itemBuilder: (context, index) {
-                        final post = posts[index];
-
-                        return Card(
-                          margin: const EdgeInsets.only(
-                            bottom: 15,
-                          ),
-
-                          elevation: 3,
-
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-
-                              children: [
-
-                                Text(
-                                  post["title"] ?? "",
-
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight:
-                                        FontWeight.bold,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.category,
-                                      size: 18,
-                                    ),
-
-                                    const SizedBox(width: 6),
-
-                                    Text(
-                                      post["category"] ?? "",
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 6),
-
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.person,
-                                      size: 18,
-                                    ),
-
-                                    const SizedBox(width: 6),
-
-                                    Text(
-                                      post["author"] ?? "",
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                Text(
-                                  post["content"] ?? "",
-
-                                  maxLines: 3,
-
-                                  overflow:
-                                      TextOverflow.ellipsis,
-
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    height: 1.5,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.end,
-
-                                  children: [
-                                    // DETAIL
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (context) =>
-                                                    DetailPage(
-                                              post: post,
-                                            ),
-                                          ),
-                                        );
-                                      },
-
-                                      icon: const Icon(
-                                        Icons.visibility,
-                                      ),
-
-                                      label: const Text(
-                                        "Detail",
-                                      ),
-                                    ),
-
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        showEditForm(post);
-                                      },
-
-                                      icon: const Icon(
-                                        Icons.edit,
-                                      ),
-
-                                      label: const Text(
-                                        "Edit",
-                                      ),
-                                    ),
-
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        confirmDelete(post);
-                                      },
-
-                                      icon: const Icon(
-                                        Icons.delete,
-                                      ),
-
-                                      label: const Text(
-                                        "Hapus",
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
                     ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: showAddForm,
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Kategori: ${post["category"]}"),
+                          Text("Penulis: ${post["author"]}"),
+                          const SizedBox(height: 8),
+                          Text(
+                            post["content"] ?? "",
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
 
-        child: const Icon(Icons.add),
-      ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetailPage(post: post),
+                        ),
+                      );
+                    },
+
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == "edit") {
+                          showFormArtikel(post: post);
+                        }
+
+                        if (value == "delete") {
+                          deleteArtikel(post["id"]);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: "edit",
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit),
+                              SizedBox(width: 8),
+                              Text("Edit"),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: "delete",
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete),
+                              SizedBox(width: 8),
+                              Text("Hapus"),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }
