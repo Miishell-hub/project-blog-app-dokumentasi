@@ -39,6 +39,10 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  // ============================================================
+  // LOAD DATA
+  // ============================================================
+
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -92,6 +96,10 @@ class _HomePageState extends State<HomePage> {
     await saveData();
   }
 
+  // ============================================================
+  // SAVE DATA
+  // ============================================================
+
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -99,6 +107,10 @@ class _HomePageState extends State<HomePage> {
 
     await prefs.setString('posts', jsonEncode(posts));
   }
+
+  // ============================================================
+  // TAMBAH KATEGORI
+  // ============================================================
 
   void showAddCategory(StateSetter setDialogState) {
     categoryController.clear();
@@ -185,14 +197,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ============================================================
+  // FORM ARTIKEL
+  // ============================================================
+
   void showFormArtikel({Map? post}) {
     if (post != null) {
       editingId = post['id'];
 
       titleController.text = post['title'] ?? '';
-
       authorController.text = post['author'] ?? '';
-
       contentController.text = post['content'] ?? '';
 
       selectedCategory = post['category_id'];
@@ -216,89 +230,111 @@ class _HomePageState extends State<HomePage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(post == null ? 'Tambah Artikel' : 'Edit Artikel'),
+              title: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(post == null ? 'Tambah Artikel' : 'Edit Artikel'),
+              ),
 
-              content: SizedBox(
-                width: 500,
-
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Judul Artikel',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      TextField(
-                        controller: authorController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Penulis',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      Row(
+              content: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SizedBox(
+                    width: constraints.maxWidth > 500
+                        ? 500
+                        : constraints.maxWidth,
+                    child: SingleChildScrollView(
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: DropdownButtonFormField<int>(
-                              value: selectedCategory,
-
-                              decoration: const InputDecoration(
-                                labelText: 'Kategori',
-                                border: OutlineInputBorder(),
-                              ),
-
-                              items: categories.map<DropdownMenuItem<int>>((
-                                category,
-                              ) {
-                                return DropdownMenuItem<int>(
-                                  value: category['id'],
-                                  child: Text(category['nama']),
-                                );
-                              }).toList(),
-
-                              onChanged: (value) {
-                                setDialogState(() {
-                                  selectedCategory = value;
-                                });
-                              },
+                          TextField(
+                            controller: titleController,
+                            decoration: const InputDecoration(
+                              labelText: 'Judul Artikel',
+                              border: OutlineInputBorder(),
                             ),
                           ),
 
-                          const SizedBox(width: 8),
+                          const SizedBox(height: 12),
 
-                          IconButton(
-                            onPressed: () {
-                              showAddCategory(setDialogState);
-                            },
-                            icon: const Icon(Icons.add),
-                            tooltip: 'Tambah Kategori',
+                          TextField(
+                            controller: authorController,
+                            decoration: const InputDecoration(
+                              labelText: 'Nama Penulis',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ==================================================
+                          // FLEXIBLE
+                          // ==================================================
+                          Row(
+                            children: [
+                              Flexible(
+                                child: DropdownButtonFormField<int>(
+                                  value: selectedCategory,
+
+                                  isExpanded: true,
+
+                                  decoration: const InputDecoration(
+                                    labelText: 'Kategori',
+                                    border: OutlineInputBorder(),
+                                  ),
+
+                                  items: categories.map<DropdownMenuItem<int>>((
+                                    category,
+                                  ) {
+                                    return DropdownMenuItem<int>(
+                                      value: category['id'],
+                                      child: Text(
+                                        category['nama'],
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  }).toList(),
+
+                                  onChanged: (value) {
+                                    setDialogState(() {
+                                      selectedCategory = value;
+                                    });
+                                  },
+                                ),
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              // ==================================================
+                              // EXPANDED
+                              // ==================================================
+                              Expanded(
+                                flex: 0,
+                                child: IconButton(
+                                  onPressed: () {
+                                    showAddCategory(setDialogState);
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  tooltip: 'Tambah Kategori',
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          TextField(
+                            controller: contentController,
+                            maxLines: 5,
+                            decoration: const InputDecoration(
+                              labelText: 'Isi Artikel',
+                              border: OutlineInputBorder(),
+                              alignLabelWithHint: true,
+                            ),
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 12),
-
-                      // ISI
-                      TextField(
-                        controller: contentController,
-                        maxLines: 5,
-                        decoration: const InputDecoration(
-                          labelText: 'Isi Artikel',
-                          border: OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
 
               actions: [
@@ -323,11 +359,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ============================================================
+  // SIMPAN ARTIKEL
+  // ============================================================
+
   Future<void> saveArtikel(BuildContext dialogContext) async {
     final title = titleController.text.trim();
-
     final author = authorController.text.trim();
-
     final content = contentController.text.trim();
 
     if (title.isEmpty ||
@@ -396,6 +434,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ============================================================
+  // HAPUS ARTIKEL
+  // ============================================================
+
   void deleteArtikel(int id) {
     showDialog(
       context: context,
@@ -435,125 +477,361 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ============================================================
+  // MOBILE ARTICLE
+  // ============================================================
+
+  Widget mobileArticle(Map post) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(12),
+
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+
+          child: Text(
+            post['title'] ?? '',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8),
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+              Text('Kategori: ${post['category']}'),
+
+              const SizedBox(height: 4),
+
+              Text('Penulis: ${post['author']}'),
+
+              const SizedBox(height: 8),
+
+              Text(
+                post['content'] ?? '',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailPage(
+                post: post,
+
+                edit: () {
+                  Navigator.pop(context);
+
+                  showFormArtikel(post: post);
+                },
+
+                hapus: () {
+                  Navigator.pop(context);
+
+                  deleteArtikel(post['id']);
+                },
+              ),
+            ),
+          );
+        },
+
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) {
+            if (value == 'edit') {
+              showFormArtikel(post: post);
+            }
+
+            if (value == 'delete') {
+              deleteArtikel(post['id']);
+            }
+          },
+
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+
+              child: Row(
+                children: [Icon(Icons.edit), SizedBox(width: 8), Text('Edit')],
+              ),
+            ),
+
+            const PopupMenuItem(
+              value: 'delete',
+
+              child: Row(
+                children: [
+                  Icon(Icons.delete),
+                  SizedBox(width: 8),
+                  Text('Hapus'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // DESKTOP ARTICLE BOX
+  // ============================================================
+
+  Widget desktopArticle(Map post) {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DetailPage(
+                post: post,
+
+                edit: () {
+                  Navigator.pop(context);
+
+                  showFormArtikel(post: post);
+                },
+
+                hapus: () {
+                  Navigator.pop(context);
+
+                  deleteArtikel(post['id']);
+                },
+              ),
+            ),
+          );
+        },
+
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+
+            children: [
+              // ==================================================
+              // FLEXIBLE + FITTED BOX
+              // ==================================================
+
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+
+                  child: Text(
+                    post['title'] ?? '',
+                    maxLines: 2,
+
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text('Kategori: ${post['category']}'),
+
+              const SizedBox(height: 4),
+
+              Text('Penulis: ${post['author']}'),
+
+              const SizedBox(height: 10),
+
+              // ==================================================
+              // EXPANDED
+              // ==================================================
+              Expanded(
+                child: Text(
+                  post['content'] ?? '',
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+
+                children: [
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        showFormArtikel(post: post);
+                      }
+
+                      if (value == 'delete') {
+                        deleteArtikel(post['id']);
+                      }
+                    },
+
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+
+                      const PopupMenuItem(
+                        value: 'delete',
+
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete),
+                            SizedBox(width: 8),
+                            Text('Hapus'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
+    // ============================================================
+    // MEDIA QUERY
+    // ============================================================
+
+    final sizeWidth = MediaQuery.sizeOf(context).width;
+
+    final sizeHeight = MediaQuery.sizeOf(context).height;
+
+    final orientation = MediaQuery.orientationOf(context);
+
+    final paddingDevice = MediaQuery.paddingOf(context);
+
+    final isPortrait = orientation == Orientation.portrait;
+
+    // Prevent unused variable warning
+    if (sizeHeight < 0 || paddingDevice.top < 0) {
+      return const SizedBox();
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Blog App'), centerTitle: true),
+      appBar: AppBar(
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+
+          child: const Text(
+            'Blog App',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+
+        centerTitle: true,
+      ),
 
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showFormArtikel();
         },
+
         child: const Icon(Icons.add),
       ),
 
-      body: posts.isEmpty
-          ? const Center(child: Text('Belum ada artikel'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
+      // ==========================================================
+      // LAYOUT BUILDER
+      // ==========================================================
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // ======================================================
+          // NARROW SCREEN
+          // ======================================================
+
+          if (constraints.maxWidth < 600) {
+            if (posts.isEmpty) {
+              return const Center(child: Text('Belum ada artikel'));
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.fromLTRB(
+                12,
+                12,
+                12,
+                12 + paddingDevice.bottom,
+              ),
 
               itemCount: posts.length,
 
               itemBuilder: (context, index) {
-                final post = posts[index];
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-
-                    title: Text(
-                      post['title'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8),
-
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Kategori: ${post['category']}'),
-
-                          Text('Penulis: ${post['author']}'),
-
-                          const SizedBox(height: 8),
-
-                          Text(
-                            post['content'] ?? '',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DetailPage(
-                            post: post,
-
-                            edit: () {
-                              Navigator.pop(context);
-
-                              showFormArtikel(post: post);
-                            },
-
-                            hapus: () {
-                              Navigator.pop(context);
-
-                              deleteArtikel(post['id']);
-                            },
-                          ),
-                        ),
-                      );
-                    },
-
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          showFormArtikel(post: post);
-                        }
-
-                        if (value == 'delete') {
-                          deleteArtikel(post['id']);
-                        }
-                      },
-
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete),
-                              SizedBox(width: 8),
-                              Text('Hapus'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                return mobileArticle(posts[index]);
               },
+            );
+          }
+
+          // ======================================================
+          // WIDE SCREEN
+          // ======================================================
+
+          if (posts.isEmpty) {
+            return const Center(child: Text('Belum ada artikel'));
+          }
+
+          int crossAxisCount = 2;
+
+          if (constraints.maxWidth >= 1200) {
+            crossAxisCount = 3;
+          }
+
+          if (constraints.maxWidth >= 1600) {
+            crossAxisCount = 4;
+          }
+
+          return GridView.builder(
+            padding: EdgeInsets.fromLTRB(
+              sizeWidth >= 1200 ? 50 : 24,
+              24,
+              sizeWidth >= 1200 ? 50 : 24,
+              24,
             ),
+
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+
+              crossAxisSpacing: 16,
+
+              mainAxisSpacing: 16,
+
+              childAspectRatio: isPortrait ? 1.3 : 1.6,
+            ),
+
+            itemCount: posts.length,
+
+            itemBuilder: (context, index) {
+              return desktopArticle(posts[index]);
+            },
+          );
+        },
+      ),
     );
   }
 }
