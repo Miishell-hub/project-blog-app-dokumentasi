@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'detail_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -48,22 +50,10 @@ class _HomePageState extends State<HomePage> {
         categories = jsonDecode(savedCategories);
       } else {
         categories = [
-          {
-            'id': 1,
-            'nama': 'Teknologi',
-          },
-          {
-            'id': 2,
-            'nama': 'Pendidikan',
-          },
-          {
-            'id': 3,
-            'nama': 'Olahraga',
-          },
-          {
-            'id': 4,
-            'nama': 'Lifestyle',
-          },
+          {'id': 1, 'nama': 'Teknologi'},
+          {'id': 2, 'nama': 'Pendidikan'},
+          {'id': 3, 'nama': 'Olahraga'},
+          {'id': 4, 'nama': 'Lifestyle'},
         ];
       }
 
@@ -75,8 +65,7 @@ class _HomePageState extends State<HomePage> {
             'id': 1,
             'category_id': 1,
             'title': 'Belajar Flutter untuk Pemula',
-            'content':
-                'Flutter adalah framework yang digunakan untuk membuat aplikasi mobile.',
+            'content': 'Flutter adalah framework yang digunakan untuk membuat aplikasi mobile.',
             'author': 'Admin',
             'category': 'Teknologi',
           },
@@ -84,8 +73,7 @@ class _HomePageState extends State<HomePage> {
             'id': 2,
             'category_id': 2,
             'title': 'Pentingnya Belajar Teknologi',
-            'content':
-                'Teknologi sangat penting untuk membantu kegiatan manusia sehari-hari.',
+            'content': 'Teknologi sangat penting untuk membantu kegiatan manusia sehari-hari.',
             'author': 'Admin',
             'category': 'Pendidikan',
           },
@@ -93,8 +81,7 @@ class _HomePageState extends State<HomePage> {
             'id': 3,
             'category_id': 3,
             'title': 'Manfaat Berolahraga',
-            'content':
-                'Olahraga secara teratur dapat membantu menjaga kebugaran tubuh.',
+            'content': 'Olahraga secara teratur dapat membantu menjaga kebugaran tubuh.',
             'author': 'Admin',
             'category': 'Olahraga',
           },
@@ -108,20 +95,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString(
-      'categories',
-      jsonEncode(categories),
-    );
+    await prefs.setString('categories', jsonEncode(categories));
 
-    await prefs.setString(
-      'posts',
-      jsonEncode(posts),
-    );
+    await prefs.setString('posts', jsonEncode(posts));
   }
 
-  void showAddCategory(
-    StateSetter setDialogState,
-  ) {
+  void showAddCategory(StateSetter setDialogState) {
     categoryController.clear();
 
     showDialog(
@@ -148,8 +127,7 @@ class _HomePageState extends State<HomePage> {
 
             ElevatedButton(
               onPressed: () async {
-                final nama =
-                    categoryController.text.trim();
+                final nama = categoryController.text.trim();
 
                 if (nama.isEmpty) {
                   return;
@@ -157,22 +135,15 @@ class _HomePageState extends State<HomePage> {
 
                 final sudahAda = categories.any(
                   (category) =>
-                      category['nama']
-                          .toString()
-                          .toLowerCase() ==
+                      category['nama'].toString().toLowerCase() ==
                       nama.toLowerCase(),
                 );
 
                 if (sudahAda) {
                   Navigator.pop(categoryContext);
 
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Kategori sudah ada',
-                      ),
-                    ),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Kategori sudah ada')),
                   );
 
                   return;
@@ -181,22 +152,15 @@ class _HomePageState extends State<HomePage> {
                 int newId = 1;
 
                 if (categories.isNotEmpty) {
-                  newId = categories
-                          .map(
-                            (category) =>
-                                category['id'] as int,
-                          )
-                          .reduce(
-                            (a, b) => a > b ? a : b,
-                          ) +
+                  newId =
+                      categories
+                          .map((category) => category['id'] as int)
+                          .reduce((a, b) => a > b ? a : b) +
                       1;
                 }
 
                 setState(() {
-                  categories.add({
-                    'id': newId,
-                    'nama': nama,
-                  });
+                  categories.add({'id': newId, 'nama': nama});
 
                   selectedCategory = newId;
                 });
@@ -207,12 +171,9 @@ class _HomePageState extends State<HomePage> {
 
                 Navigator.pop(categoryContext);
 
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      'Kategori "$nama" berhasil ditambahkan',
-                    ),
+                    content: Text('Kategori "$nama" berhasil ditambahkan'),
                   ),
                 );
               },
@@ -224,23 +185,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void showFormArtikel({
-    Map? post,
-  }) {
+  void showFormArtikel({Map? post}) {
     if (post != null) {
       editingId = post['id'];
 
-      titleController.text =
-          post['title'] ?? '';
+      titleController.text = post['title'] ?? '';
 
-      authorController.text =
-          post['author'] ?? '';
+      authorController.text = post['author'] ?? '';
 
-      contentController.text =
-          post['content'] ?? '';
+      contentController.text = post['content'] ?? '';
 
-      selectedCategory =
-          post['category_id'];
+      selectedCategory = post['category_id'];
     } else {
       editingId = null;
 
@@ -249,8 +204,7 @@ class _HomePageState extends State<HomePage> {
       contentController.clear();
 
       if (categories.isNotEmpty) {
-        selectedCategory =
-            categories[0]['id'];
+        selectedCategory = categories[0]['id'];
       } else {
         selectedCategory = null;
       }
@@ -260,16 +214,9 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (
-            context,
-            setDialogState,
-          ) {
+          builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(
-                post == null
-                    ? 'Tambah Artikel'
-                    : 'Edit Artikel',
-              ),
+              title: Text(post == null ? 'Tambah Artikel' : 'Edit Artikel'),
 
               content: SizedBox(
                 width: 500,
@@ -279,11 +226,9 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       TextField(
                         controller: titleController,
-                        decoration:
-                            const InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Judul Artikel',
-                          border:
-                              OutlineInputBorder(),
+                          border: OutlineInputBorder(),
                         ),
                       ),
 
@@ -291,11 +236,9 @@ class _HomePageState extends State<HomePage> {
 
                       TextField(
                         controller: authorController,
-                        decoration:
-                            const InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Nama Penulis',
-                          border:
-                              OutlineInputBorder(),
+                          border: OutlineInputBorder(),
                         ),
                       ),
 
@@ -304,38 +247,26 @@ class _HomePageState extends State<HomePage> {
                       Row(
                         children: [
                           Expanded(
-                            child:
-                                DropdownButtonFormField<
-                                    int>(
-                              value:
-                                  selectedCategory,
+                            child: DropdownButtonFormField<int>(
+                              value: selectedCategory,
 
-                              decoration:
-                                  const InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Kategori',
-                                border:
-                                    OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                               ),
 
-                              items: categories.map<
-                                  DropdownMenuItem<int>>(
-                                (category) {
-                                  return DropdownMenuItem<
-                                      int>(
-                                    value:
-                                        category['id'],
-                                    child: Text(
-                                      category['nama'],
-                                    ),
-                                  );
-                                },
-                              ).toList(),
+                              items: categories.map<DropdownMenuItem<int>>((
+                                category,
+                              ) {
+                                return DropdownMenuItem<int>(
+                                  value: category['id'],
+                                  child: Text(category['nama']),
+                                );
+                              }).toList(),
 
-                              onChanged:
-                                  (value) {
+                              onChanged: (value) {
                                 setDialogState(() {
-                                  selectedCategory =
-                                      value;
+                                  selectedCategory = value;
                                 });
                               },
                             ),
@@ -345,15 +276,10 @@ class _HomePageState extends State<HomePage> {
 
                           IconButton(
                             onPressed: () {
-                              showAddCategory(
-                                setDialogState,
-                              );
+                              showAddCategory(setDialogState);
                             },
-                            icon: const Icon(
-                              Icons.add,
-                            ),
-                            tooltip:
-                                'Tambah Kategori',
+                            icon: const Icon(Icons.add),
+                            tooltip: 'Tambah Kategori',
                           ),
                         ],
                       ),
@@ -362,14 +288,11 @@ class _HomePageState extends State<HomePage> {
 
                       // ISI
                       TextField(
-                        controller:
-                            contentController,
+                        controller: contentController,
                         maxLines: 5,
-                        decoration:
-                            const InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Isi Artikel',
-                          border:
-                              OutlineInputBorder(),
+                          border: OutlineInputBorder(),
                           alignLabelWithHint: true,
                         ),
                       ),
@@ -381,24 +304,16 @@ class _HomePageState extends State<HomePage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(
-                      dialogContext,
-                    );
+                    Navigator.pop(dialogContext);
                   },
                   child: const Text('Batal'),
                 ),
 
                 ElevatedButton(
                   onPressed: () {
-                    saveArtikel(
-                      dialogContext,
-                    );
+                    saveArtikel(dialogContext);
                   },
-                  child: Text(
-                    post == null
-                        ? 'Tambah'
-                        : 'Simpan',
-                  ),
+                  child: Text(post == null ? 'Tambah' : 'Simpan'),
                 ),
               ],
             );
@@ -408,84 +323,58 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> saveArtikel(
-    BuildContext dialogContext,
-  ) async {
-    final title =
-        titleController.text.trim();
+  Future<void> saveArtikel(BuildContext dialogContext) async {
+    final title = titleController.text.trim();
 
-    final author =
-        authorController.text.trim();
+    final author = authorController.text.trim();
 
-    final content =
-        contentController.text.trim();
+    final content = contentController.text.trim();
 
     if (title.isEmpty ||
         author.isEmpty ||
         content.isEmpty ||
         selectedCategory == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Semua data harus diisi',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Semua data harus diisi')));
 
       return;
     }
 
-    final category =
-        categories.firstWhere(
-      (item) =>
-          item['id'] == selectedCategory,
+    final category = categories.firstWhere(
+      (item) => item['id'] == selectedCategory,
     );
 
     if (editingId == null) {
-
       int newId = 1;
 
       if (posts.isNotEmpty) {
-        newId = posts
-                .map(
-                  (post) =>
-                      post['id'] as int,
-                )
-                .reduce(
-                  (a, b) => a > b ? a : b,
-                ) +
+        newId =
+            posts
+                .map((post) => post['id'] as int)
+                .reduce((a, b) => a > b ? a : b) +
             1;
       }
 
       posts.add({
         'id': newId,
-        'category_id':
-            selectedCategory,
+        'category_id': selectedCategory,
         'title': title,
         'content': content,
         'author': author,
-        'category':
-            category['nama'],
+        'category': category['nama'],
       });
     } else {
-
-      final index =
-          posts.indexWhere(
-        (post) =>
-            post['id'] == editingId,
-      );
+      final index = posts.indexWhere((post) => post['id'] == editingId);
 
       if (index != -1) {
         posts[index] = {
           'id': editingId,
-          'category_id':
-              selectedCategory,
+          'category_id': selectedCategory,
           'title': title,
           'content': content,
           'author': author,
-          'category':
-              category['nama'],
+          'category': category['nama'],
         };
       }
     }
@@ -496,8 +385,7 @@ class _HomePageState extends State<HomePage> {
 
     Navigator.pop(dialogContext);
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           editingId == null
@@ -513,20 +401,14 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            'Hapus Artikel',
-          ),
+          title: const Text('Hapus Artikel'),
 
-          content: const Text(
-            'Apakah kamu yakin ingin menghapus artikel ini?',
-          ),
+          content: const Text('Apakah kamu yakin ingin menghapus artikel ini?'),
 
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                );
+                Navigator.pop(dialogContext);
               },
               child: const Text('Batal'),
             ),
@@ -534,25 +416,15 @@ class _HomePageState extends State<HomePage> {
             ElevatedButton(
               onPressed: () async {
                 setState(() {
-                  posts.removeWhere(
-                    (post) =>
-                        post['id'] == id,
-                  );
+                  posts.removeWhere((post) => post['id'] == id);
                 });
 
                 await saveData();
 
-                Navigator.pop(
-                  dialogContext,
-                );
+                Navigator.pop(dialogContext);
 
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Artikel berhasil dihapus',
-                    ),
-                  ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Artikel berhasil dihapus')),
                 );
               },
               child: const Text('Hapus'),
@@ -566,13 +438,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Blog App'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Blog App'), centerTitle: true),
 
-      floatingActionButton:
-          FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
           showFormArtikel();
         },
@@ -580,74 +448,45 @@ class _HomePageState extends State<HomePage> {
       ),
 
       body: posts.isEmpty
-          ? const Center(
-              child: Text(
-                'Belum ada artikel',
-              ),
-            )
+          ? const Center(child: Text('Belum ada artikel'))
           : ListView.builder(
-              padding:
-                  const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
 
               itemCount: posts.length,
 
-              itemBuilder:
-                  (context, index) {
-                final post =
-                    posts[index];
+              itemBuilder: (context, index) {
+                final post = posts[index];
 
                 return Card(
-                  margin:
-                      const EdgeInsets.only(
-                    bottom: 12,
-                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
 
                   child: ListTile(
-                    contentPadding:
-                        const EdgeInsets.all(
-                      16,
-                    ),
+                    contentPadding: const EdgeInsets.all(16),
 
                     title: Text(
                       post['title'] ?? '',
-                      style:
-                          const TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
-                        fontWeight:
-                            FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
                     subtitle: Padding(
-                      padding:
-                          const EdgeInsets.only(
-                        top: 8,
-                      ),
+                      padding: const EdgeInsets.only(top: 8),
 
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Kategori: ${post['category']}',
-                          ),
+                          Text('Kategori: ${post['category']}'),
+
+                          Text('Penulis: ${post['author']}'),
+
+                          const SizedBox(height: 8),
 
                           Text(
-                            'Penulis: ${post['author']}',
-                          ),
-
-                          const SizedBox(
-                            height: 8,
-                          ),
-
-                          Text(
-                            post['content'] ??
-                                '',
+                            post['content'] ?? '',
                             maxLines: 2,
-                            overflow:
-                                TextOverflow
-                                    .ellipsis,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
@@ -657,67 +496,43 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  DetailPage(
+                          builder: (context) => DetailPage(
                             post: post,
 
                             edit: () {
-                              Navigator.pop(
-                                context,
-                              );
+                              Navigator.pop(context);
 
-                              showFormArtikel(
-                                post: post,
-                              );
+                              showFormArtikel(post: post);
                             },
 
                             hapus: () {
-                              Navigator.pop(
-                                context,
-                              );
+                              Navigator.pop(context);
 
-                              deleteArtikel(
-                                post['id'],
-                              );
+                              deleteArtikel(post['id']);
                             },
                           ),
                         ),
                       );
                     },
 
-                    trailing:
-                        PopupMenuButton<
-                            String>(
-                      onSelected:
-                          (value) {
-                        if (value ==
-                            'edit') {
-                          showFormArtikel(
-                            post: post,
-                          );
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          showFormArtikel(post: post);
                         }
 
-                        if (value ==
-                            'delete') {
-                          deleteArtikel(
-                            post['id'],
-                          );
+                        if (value == 'delete') {
+                          deleteArtikel(post['id']);
                         }
                       },
 
-                      itemBuilder:
-                          (context) => [
+                      itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'edit',
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.edit,
-                              ),
-                              SizedBox(
-                                width: 8,
-                              ),
+                              Icon(Icons.edit),
+                              SizedBox(width: 8),
                               Text('Edit'),
                             ],
                           ),
@@ -727,12 +542,8 @@ class _HomePageState extends State<HomePage> {
                           value: 'delete',
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.delete,
-                              ),
-                              SizedBox(
-                                width: 8,
-                              ),
+                              Icon(Icons.delete),
+                              SizedBox(width: 8),
                               Text('Hapus'),
                             ],
                           ),
